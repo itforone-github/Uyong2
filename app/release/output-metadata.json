@@ -1,0 +1,20 @@
+{
+  "version": 3,
+  "artifactType": {
+    "type": "APK",
+    "kind": "Directory"
+  },
+  "applicationId": "kr.foryou.uyong2",
+  "variantName": "release",
+  "elements": [
+    {
+      "type": "SINGLE",
+      "filters": [],
+      "attributes": [],
+      "versionCode": 2017,
+      "versionName": "2.017",
+      "outputFile": "app-release.apk"
+    }
+  ],
+  "elementType": "File"
+}

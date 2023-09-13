@@ -96,13 +96,7 @@ public class NetworkCheck {
                 Log.d("network","연결 안됨");
             }
             Log.d("network",isBoolean+"");
-            if(isBoolean){
-                webLayout.setVisibility(View.VISIBLE);
-                networkLayout.setVisibility(View.GONE);
-            }else{
-                webLayout.setVisibility(View.GONE);
-                networkLayout.setVisibility(View.VISIBLE);
-            }
+
         }
     };
 

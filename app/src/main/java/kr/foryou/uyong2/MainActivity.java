@@ -1,6 +1,7 @@
 package kr.foryou.uyong2;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.DialogInterface;
@@ -15,10 +16,7 @@ import android.os.Message;
 import android.os.Parcelable;
 import android.os.StrictMode;
 import android.provider.MediaStore;
-import android.support.annotation.RequiresApi;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
+
 import android.util.Log;
 import android.view.View;
 import android.webkit.CookieManager;
@@ -39,6 +37,10 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
+
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -103,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
 
     //레이아웃 설정
     public void setLayout() {
-        networkLayout = (RelativeLayout) findViewById(R.id.networkLayout);//네트워크 연결이 끊겼을 때 레이아웃 가져오기
+
         webLayout = (LinearLayout) findViewById(R.id.webLayout);//웹뷰 레이아웃 가져오기
         /*webLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
@@ -113,7 +115,6 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });*/
-        loadingProgress = (ProgressBar)findViewById(R.id.loadingProgress);
         webView = (WebView) findViewById(R.id.webView);//웹뷰 가져오기
         webView.loadUrl(firstUrl);
         webView.setDownloadListener(new DownloadListener() {
@@ -149,11 +150,20 @@ public class MainActivity extends AppCompatActivity {
 
     @RequiresApi(api = Build.VERSION_CODES.ECLAIR_MR1)
     public void webViewSetting() {
-        /*webView.addJavascriptInterface(new AppShare(), "appshare");
-        webView.addJavascriptInterface(new AppShares(), "appshares");
-        webView.addJavascriptInterface(new PostEmail(), "postemail");*/
         WebSettings setting = webView.getSettings();//웹뷰 세팅용
-
+        if(Build.VERSION.SDK_INT >= 21) {
+            webView.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+            //쿠키 생성
+            CookieManager cookieManager = CookieManager.getInstance();
+            cookieManager.setAcceptCookie(true);
+            cookieManager.setAcceptThirdPartyCookies(webView,true);
+        }
+        //웹뷰 하드웨어 가속 시키기
+        if(Build.VERSION.SDK_INT >= 19){
+            webView.setLayerType(View.LAYER_TYPE_HARDWARE,null);
+        }else{
+            webView.setLayerType(View.LAYER_TYPE_SOFTWARE,null);
+        }
         setting.setAllowFileAccess(true);//웹에서 파일 접근 여부
         setting.setAppCacheEnabled(true);//캐쉬 사용여부
         setting.setGeolocationEnabled(true);//위치 정보 사용여부
@@ -163,37 +173,26 @@ public class MainActivity extends AppCompatActivity {
         setting.setJavaScriptEnabled(true);//자바스크립트 사용여부
         setting.setSupportMultipleWindows(false);//윈도우 창 여러개를 사용할 것인지의 여부 무조건 false로 하는 게 좋음
         setting.setUseWideViewPort(true);//웹에서 view port 사용여부
+        //setting.setTextZoom(100);
+        setting.setSupportZoom(true);//확대 축소
+
+        setting.setBuiltInZoomControls(true);//확대 축소 컨트롤
+        setting.setDisplayZoomControls(false);
+
+
+
+
+        setting.setUserAgentString("Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Mobile Safari/537.36"+"/zerovapp");
         webView.setWebChromeClient(chrome);//웹에서 경고창이나 또는 컴펌창을 띄우기 위한 메서드
         webView.setWebViewClient(client);//웹페이지 관련된 메서드 페이지 이동할 때 또는 페이지가 로딩이 끝날 때 주로 쓰임
-        String userAgent = webView.getSettings().getUserAgentString();
-        webView.getSettings().setUserAgentString(userAgent+" Uyong2");
-        webView.addJavascriptInterface(new WebJavascriptEvent(), "Android");
 
-        //현재 안드로이드 버전이 허니콤(3.0) 보다 높으면 줌 컨트롤 사용여부 체킹
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            setting.setBuiltInZoomControls(true);
-            setting.setDisplayZoomControls(false);
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-        } else {
-            webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-        }
-        //네트워크 체킹을 할 때 쓰임
-        netCheck = new NetworkCheck(this, this);
-        netCheck.setNetworkLayout(networkLayout);
-        netCheck.setWebLayout(webLayout);
-        netCheck.networkCheck();
+        webView.addJavascriptInterface(new WebJavascriptEvent(), "Android");
         //뒤로가기 버튼을 눌렀을 때 클래스로 제어함
         backPressCloseHandler = new BackPressCloseHandler(this);
+        webView.loadUrl(firstUrl);
 
-        replayBtn=(Button)findViewById(R.id.replayBtn);
-        replayBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                netCheck.networkCheck();
-            }
-        });
+
+
     }
 
     WebChromeClient chrome;
@@ -210,6 +209,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onJsAlert(WebView view, String url, String message, final JsResult result) {
                 new AlertDialog.Builder(MainActivity.this)
                         .setMessage("\n" + message + "\n")
+                        .setCancelable(false)
                         .setPositiveButton("확인",
                                 new DialogInterface.OnClickListener() {
                                     @Override
@@ -333,6 +333,7 @@ public class MainActivity extends AppCompatActivity {
         };
     }
 
+    @SuppressLint("MissingSuperCall")
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == FILECHOOSER_NORMAL_REQ_CODE) {
@@ -361,7 +362,7 @@ public class MainActivity extends AppCompatActivity {
             //페이지 로딩중일 때 (마시멜로) 6.0 이후에는 쓰지 않음
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                loadingProgress.setVisibility(View.VISIBLE);
+
                 if (url.startsWith("tel")) {
                     Intent intent = new Intent(Intent.ACTION_DIAL);
                     intent.setData(Uri.parse(url));
@@ -386,6 +387,13 @@ public class MainActivity extends AppCompatActivity {
 
 
                 }
+                if(!url.startsWith(getString(R.string.url))){
+                    Intent intent = new Intent(Intent.ACTION_VIEW,Uri.parse(url));
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY|Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
+                    startActivity(intent);
+                    return true;
+                }
                 /*
                 if(url.startsWith(getString(R.string.url))){
                     //webView.loadUrl(getString(R.string.url)+"/?lat="+LocationPosition.lat+"&lng="+LocationPosition.lng);
@@ -401,7 +409,7 @@ public class MainActivity extends AppCompatActivity {
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 //webLayout.setRefreshing(false);
-                loadingProgress.setVisibility(View.GONE);
+
                 Log.d("ss_mb_id", Common.getPref(getApplicationContext(),"ss_mb_id",""));
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
                     CookieSyncManager.getInstance().sync();
@@ -417,6 +425,7 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     isIndex=false;
                 }
+
             }
             //페이지 오류가 났을 때 6.0 이후에는 쓰이지 않음
             @Override
@@ -435,15 +444,7 @@ public class MainActivity extends AppCompatActivity {
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
     }
-    //쿠키 값 삭제
-    public void deleteCookie(){
-        CookieSyncManager cookieSyncManager = CookieSyncManager.createInstance(webView.getContext());
-        CookieManager cookieManager = CookieManager.getInstance();
-        cookieManager.setAcceptCookie(true);
-        cookieManager.removeSessionCookie();
-        cookieManager.removeAllCookie();
-        cookieSyncManager.sync();
-    }
+
     //다시 들어왔을 때
     @Override
     protected void onResume() {
@@ -470,15 +471,17 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        netCheck.stopReciver();
+
     }
 
     //뒤로가기를 눌렀을 때
     public void onBackPressed() {
         //super.onBackPressed();
-
+        Log.d("history-back",webView.getUrl());
+        Log.d("is-back",isIndex+"");
         //웹뷰에서 히스토리가 남아있으면 뒤로가기 함
         if (!isIndex) {
+            Log.d("is-back",webView.canGoBack()+"");
             if (webView.canGoBack()) {
                 webView.goBack();
             } else if (webView.canGoBack() == false) {
